@@ -1,0 +1,242 @@
+# Settings for ros_control control loop
+hardware_control_loop:
+   loop_hz: 500
+
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Hz
+
+# Publish all joint states ----------------------------------
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    io_and_status_controller:
+      type: ur_controllers/GPIOController
+
+# Publish speed_scaling factor
+    speed_scaling_state_broadcaster:
+      type: ur_controllers/SpeedScalingStateBroadcaster
+
+# Publish wrench ----------------------------------
+    force_torque_sensor_broadcaster:
+      type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
+
+    joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    scaled_joint_trajectory_controller:
+      type: ur_controllers/ScaledJointTrajectoryController
+
+    forward_velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+    forward_position_controller:
+      type: position_controllers/JointGroupPositionController
+
+    cartesian_force_controller:
+      type: cartesian_force_controller/CartesianForceController
+
+    cartesian_compliance_controller:
+      type: cartesian_compliance_controller/CartesianComplianceController
+
+speed_scaling_state_broadcaster:
+  ros__parameters:
+    state_publish_rate: 100.0
+
+
+force_torque_sensor_broadcaster:
+  ros__parameters:
+    sensor_name: tcp_fts_sensor
+    state_interface_names:
+      - force.x
+      - force.y
+      - force.z
+      - torque.x
+      - torque.y
+      - torque.z
+    frame_id: ur_tool0
+    topic_name: ft_data
+
+
+joint_trajectory_controller:
+  ros__parameters:
+    joints:
+     - ur_shoulder_pan_joint
+     - ur_shoulder_lift_joint
+     - ur_elbow_joint
+     - ur_wrist_1_joint
+     - ur_wrist_2_joint
+     - ur_wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    state_publish_rate: 100.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+    constraints:
+      stopped_velocity_tolerance: 0.2
+      goal_time: 0.0
+      shoulder_pan_joint: { trajectory: 0.2, goal: 0.1 }
+      shoulder_lift_joint: { trajectory: 0.2, goal: 0.1 }
+      elbow_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_1_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_2_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_3_joint: { trajectory: 0.2, goal: 0.1 }
+
+# Joint Trajectory Controller - position based -------------------------------
+# For detailed explanations of parameter see http://wiki.ros.org/joint_trajectory_controller
+scaled_joint_trajectory_controller:
+  ros__parameters:
+    joints:
+     - ur_shoulder_pan_joint
+     - ur_shoulder_lift_joint
+     - ur_elbow_joint
+     - ur_wrist_1_joint
+     - ur_wrist_2_joint
+     - ur_wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    state_publish_rate: 100.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+    constraints:
+      stopped_velocity_tolerance: 0.2
+      goal_time: 0.0
+      shoulder_pan_joint: { trajectory: 0.2, goal: 0.1 }
+      shoulder_lift_joint: { trajectory: 0.2, goal: 0.1 }
+      elbow_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_1_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_2_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_3_joint: { trajectory: 0.2, goal: 0.1 }
+
+forward_velocity_controller:
+  ros__parameters:
+    joints:
+     - ur_shoulder_pan_joint
+     - ur_shoulder_lift_joint
+     - ur_elbow_joint
+     - ur_wrist_1_joint
+     - ur_wrist_2_joint
+     - ur_wrist_3_joint
+    interface_name: velocity
+
+forward_position_controller:
+  ros__parameters:
+    joints:
+     - ur_shoulder_pan_joint
+     - ur_shoulder_lift_joint
+     - ur_elbow_joint
+     - ur_wrist_1_joint
+     - ur_wrist_2_joint
+     - ur_wrist_3_joint
+
+cartesian_force_controller:
+  ros__parameters:
+    #      robot_description:
+    end_effector_link: "ur_tool0"
+    robot_base_link: "ur_base"
+    ft_sensor_ref_link: "ur_tool0"
+#    hand_frame_control: true
+    output: screen
+    solver:
+        error_scale: 0.1
+    # Choose: position or velocity.
+    command_interfaces:
+      - position
+      #- velocity
+
+    joints:
+     - ur_shoulder_pan_joint
+     - ur_shoulder_lift_joint
+     - ur_elbow_joint
+     - ur_wrist_1_joint
+     - ur_wrist_2_joint
+     - ur_wrist_3_joint
+
+    pd_gains:
+        trans_x: {p: 0.0025}
+        trans_y: {p: 0.0025}
+        trans_z: {p: 0.0025}
+        rot_x: {p: 0.1}
+        rot_y: {p: 0.1}
+        rot_z: {p: 0.1}
+
+cartesian_compliance_controller:
+  ros__parameters:
+    end_effector_link: "ur_tool0"
+    robot_base_link: "ur_base"
+    ft_sensor_ref_link: "ur_tool0"
+    compliance_ref_link: "ur_tool0"
+    target_frame_topic: "target_frame"
+    joints:
+     - ur_shoulder_pan_joint
+     - ur_shoulder_lift_joint
+     - ur_elbow_joint
+     - ur_wrist_1_joint
+     - ur_wrist_2_joint
+     - ur_wrist_3_joint
+    command_interfaces:
+     - position
+     #- velocity
+    stiffness:
+      trans_x: 1500
+      trans_y: 1500
+      trans_z: 1500
+      rot_x: 150
+      rot_y: 150
+      rot_z: 150
+    pd_gains:
+      trans_x: {p: 0.001} #pd gains in example: 0.05 for trans, 0.01 for rot
+      trans_y: {p: 0.001}
+      trans_z: {p: 0.001}
+      rot_x: {p: 0.06}
+      rot_y: {p: 0.06}
+      rot_z: {p: 0.06}
+
+#pos_joint_traj_controller:
+#   type: position_controllers/JointTrajectoryController
+#   joints: *robot_joints
+#   constraints:
+#      goal_time: 0.6
+#      stopped_velocity_tolerance: 0.05
+#      shoulder_pan_joint: {trajectory: 0.2, goal: 0.1}
+#      shoulder_lift_joint: {trajectory: 0.2, goal: 0.1}
+#      elbow_joint: {trajectory: 0.2, goal: 0.1}
+#      wrist_1_joint: {trajectory: 0.2, goal: 0.1}
+#      wrist_2_joint: {trajectory: 0.2, goal: 0.1}
+#      wrist_3_joint: {trajectory: 0.2, goal: 0.1}
+#   stop_trajectory_duration: 0.5
+#   state_publish_rate: 500
+#   action_monitor_rate: 10
+
+
+# cartesian_force_controller:
+#     type: "position_controllers/CartesianForceController"
+#     end_effector_link: "tool0"
+#     robot_base_link: "base"
+#     ft_sensor_ref_link: "tool0"
+#     command_interfaces:
+#     - position
+#     joints: *robot_joints
+#     pd_gains:
+#         trans_x: {p: 0.05}
+#         trans_y: {p: 0.05}
+#         trans_z: {p: 0.05}
+#         rot_x: {p: 0.01}
+#         rot_y: {p: 0.01}
+#         rot_z: {p: 0.01}
+
+## Settings for ros_control hardware interface
+#ur_hardware_interface:
+#   joints: &robot_joints
+#     - shoulder_pan_joint
+#     - shoulder_lift_joint
+#     - elbow_joint
+#     - wrist_1_joint
+#     - wrist_2_joint
+#     - wrist_3_joint

@@ -2,15 +2,21 @@
 # Licensed under the Apache License, Version 2.0
 
 # Imports for ros
-import rospy
+import rclpy
+import time
 import inspect
 
 from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, \
     Transform
 import tf2_ros, rospkg
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 from std_msgs.msg import String
+from rclpy.clock import Clock, ROSClock
+from rclpy.logging import LoggingSeverity
+from rclpy.time import Time
 import tf2_geometry_msgs
-import tf.transformations as trfm
+import tf2
 from std_srvs.srv import Trigger
 from controller_manager_msgs.srv import (ListControllers, LoadController,
                                          SwitchController)
@@ -19,7 +25,7 @@ from colorama import Fore, Back, Style
 import yaml
 from conntact.conntact_interface import ConntactInterface
 
-class ConntactROSInterface(ConntactInterface):
+class ConntactROS2Interface(ConntactInterface):
     def __init__(self, conntact_params="conntact_params", this_package_name=None):
         #read in conntact parameters
 
@@ -29,27 +35,33 @@ class ConntactROSInterface(ConntactInterface):
         self.path = self.get_package_path(this_package_name)
         self.params.update(self.load_yaml_file(conntact_params))
 
-        self._wrench_pub = rospy.Publisher('/cartesian_compliance_controller/target_wrench', WrenchStamped,
-                                           queue_size=10)
-        self._pose_pub = rospy.Publisher('cartesian_compliance_controller/target_frame', PoseStamped, queue_size=2)
-        self._adj_wrench_pub = rospy.Publisher('adjusted_wrench_force', WrenchStamped, queue_size=2)
+        self._wrench_pub = self.create_publisher(WrenchStamped, '/cartesian_compliance_controller/target_wrench',
+                                           10)
+        self._pose_pub = self.create_publisher(PoseStamped,'cartesian_compliance_controller/target_frame',10)
+        self._adj_wrench_pub = self.create_publisher(WrenchStamped, 'adjusted_wrench_force', 10)
 
         # for plotting node
-        self.avg_wrench_pub = rospy.Publisher("/conntext/avg_wrench", Wrench, queue_size=5)
-        self.avg_speed_pub = rospy.Publisher("/conntext/avg_speed", Point, queue_size=5)
-        self.rel_position_pub = rospy.Publisher("/conntext/rel_position", Point, queue_size=5)
+        self.avg_wrench_pub = self.create_publisher(Wrench, '/cartesian_compliance_controller/target_wrench',
+                                           10)
+        self.avg_speed_pub = self.create_publisher(Point, "/conntext/avg_speed",
+                                           10)
+        self.rel_position_pub = self.create_publisher(Point, "/conntext/rel_position",
+                                           10)
+        self.status_pub = self.create_publisher(String, "/conntext/status",
+                                           10)
 
-        self.status_pub = rospy.Publisher("/conntext/status", String, queue_size=5)
+        # self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/force_torque_sensor_broadcaster/wrench", self.callback_update_wrench, 10)
+        self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", self.callback_update_wrench, 10)
 
-        self._ft_sensor_sub = rospy.Subscriber("/cartesian_compliance_controller/ft_sensor_wrench/", WrenchStamped,
-                                               self.callback_update_wrench, queue_size=2)
-        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))  # tf buffer length
+        self.tf_buffer = Buffer(Clock,cache_time=tf2.Duration(1200.0)) # rclpy.duration.Duration(seconds=1200.0)
+        # self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))  # tf buffer length
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
 
         rate_integer = self.params["framework"]["refresh_rate"]
-        self._rate = rospy.Rate(rate_integer)  # setup for sleeping in hz
-        self._start_time = rospy.get_rostime()
+        self._rate = self.create_rate(rate_integer) # rospy.Rate(rate_integer)  # setup for sleeping in hz
+        self._start_time = self.get_clock().now() ##rospy.get_rostime() or ROSClock().now()
+        # self._start_time = rospy.get_rostime() #this gets the current time as a time object
         self.framesDict = {}
         self.current_wrench = WrenchStamped()
 
@@ -58,19 +70,27 @@ class ConntactROSInterface(ConntactInterface):
         # skip = True
         if(not skip):
             try:
-                rospy.wait_for_service("/ur_hardware_interface/zero_ftsensor", 5)
-                self.zeroForceService = rospy.ServiceProxy("/ur_hardware_interface/zero_ftsensor", Trigger)
+                zeroForceService = self.create_client(Trigger, "/ur_hardware_interface/zero_ftsensor")
+                while not zeroForceService.wait_for_service(timeout_sec=5.0): #rospy.wait_for_service("/ur_hardware_interface/zero_ftsensor", 5)
+                    self.get_logger().info('zero ft sensor service not available, waiting again...')
                 self.send_info("connected to service zero_ftsensor")
                 self.zero_ft_sensor()
-            except(rospy.ROSException):
+            # except(rospy.ROSException):
+            except Exception:
                 self.send_info("failed to find service zero_ftsensor")
 
             # Set up controller:
             try:
-                rospy.wait_for_service("/controller_manager/switch_controller", 5)
-                rospy.wait_for_service("/controller_manager/list_controllers", 5)
-                switch_ctrl_srv = rospy.ServiceProxy("/controller_manager/switch_controller", SwitchController)
-                controller_lister_srv = rospy.ServiceProxy("/controller_manager/list_controllers", ListControllers)
+                switch_ctrl_srv = self.create_client(SwitchController, "/controller_manager/switch_controller")
+                while not switch_ctrl_srv.wait_for_service(timeout_sec=5.0):
+                    self.get_logger().info('switchcontroller sensor service not available, waiting again...')
+                controller_lister_srv = self.create_client(ListControllers, "/controller_manager/list_controllers")
+                while not controller_lister_srv.wait_for_service(timeout_sec=5.0):
+                    self.get_logger().info('list controllers service not available, waiting again...')
+                # rospy.wait_for_service("/controller_manager/switch_controller", 5)
+                # rospy.wait_for_service("/controller_manager/list_controllers", 5)
+                # switch_ctrl_srv = rospy.ServiceProxy("/controller_manager/switch_controller", SwitchController)
+                # controller_lister_srv = rospy.ServiceProxy("/controller_manager/list_controllers", ListControllers)
                 def get_cart_ctrl(ctrl_list):
                     """
                     :param ctrl_list: List of controller objects
@@ -94,8 +114,9 @@ class ConntactROSInterface(ConntactInterface):
                     ctrl_list = controller_lister_srv().controller
                     # self.send_info(Back.LIGHTBLACK_EX +"Starting controller list: {}".format(ctrl_list))
                     if (not ctrl_list):
-                        rospy.logerr("No controllers in controller list! Controller list manager not ready.")
-                        rospy.sleep(.5)
+                        rclpy.logging._root_logger.log("No controllers in controller list! Controller list manager not ready.", LoggingSeverity.ERROR) ##what's the difference between these two lines?
+                        # rospy.logerr("No controllers in controller list! Controller list manager not ready.")
+                        time.sleep(0.5) # rospy.sleep(.5)
                         continue
                     else:
                         cart_ctrl = get_cart_ctrl(ctrl_list)
@@ -105,11 +126,11 @@ class ConntactROSInterface(ConntactInterface):
                                 break
                         if (a > 1):
                             self.send_info("Trying again to switch to compliance_controller...")
-                            rospy.sleep(.5)
+                            time.sleep(0.5)  # rospy.sleep(.5)
                         else:
                             self.send_info("Couldn't switch to compliance controller! Try switching manually.")
                     a -= 1
-            except(rospy.ROSException):
+            except Exception:
                 self.send_info("failed to find service switch_controller. Try switching manually to begin.")
 
     def load_yaml_file(self, filename):
@@ -130,15 +151,15 @@ class ConntactROSInterface(ConntactInterface):
         """
         # return np.double(rospy.get_rostime().to_sec())
         if not float:
-            return rospy.get_rostime()
-        return rospy.get_time()
+            return ROSClock().now() #rospy.get_rostime()  #rostime object
+        return self.get_clock().now() #rospy.get_time() #float object
 
     def get_package_path(self, pkg):
         """ Returns the position of `end` frame relative to `start` frame.
         :return: (string) Path to the current package, under which /config/conntact_params can be found.
         :rtype: :class:`string`
         """
-        return rospkg.RosPack().get_path(pkg)
+        return get_package_share_directory('conntact') #rospkg.RosPack().get_path(pkg)
 
     def callback_update_wrench(self, data: WrenchStamped):
         """Callback to update current wrench data whenever new data becomes available.
@@ -157,7 +178,7 @@ class ConntactROSInterface(ConntactInterface):
         :param input: (PoseStamped) Transform from a frame in the TF tree to a point of interest
         :param target_frame: (string) Frame in which to represent the input position
         """
-        return self.tf_buffer.transform(input, target_frame, rospy.Duration(.1))
+        return self.tf_buffer.transform(input, target_frame, rclpy.duration.Duration(seconds=0.1))
 
     def get_transform(self, frame, origin):
         """ Returns the position of `end` frame relative to `start` frame.
@@ -168,7 +189,7 @@ class ConntactROSInterface(ConntactInterface):
         """
         # print(Fore.MAGENTA + "lookup tcps: {}, {}".format(frame, origin) + Style.RESET_ALL)
         try:
-            output = self.tf_buffer.lookup_transform(origin, frame, rospy.Time(0), rospy.Duration(1))
+            output = self.tf_buffer.lookup_transform(origin, frame, self.get_clock().now(), rclpy.duration.Duration(seconds=1.0)) # rclpy.duration.Duration(seconds=0.1) #ROSClock().now()
             # print("Lookup successful! It's {} !!".format(output))
             # print("Lookup successful between {} and {} on behalf of method stack {}.".format(
             #     frame, origin, inspect.stack()[1][3]))
@@ -188,12 +209,12 @@ class ConntactROSInterface(ConntactInterface):
         try:
             earlier_position = self.tf_buffer.lookup_transform(
                 origin, frame,
-                rospy.Time.now() - rospy.Duration(delta_time),
-                rospy.Duration(1.0))
+                self.get_clock().now() - rclpy.time.Duration(delta_time),
+                rclpy.duration.Duration(seconds=1.0)) # ROSClock().now()
             current_position = self.tf_buffer.lookup_transform(
                 origin, frame,
-                rospy.Time(0),
-                rospy.Duration(1.0))
+                self.get_clock().now() ,
+                rclpy.duration.Duration(seconds=1.0)) # ROSClock().now()
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return (None, None)
 
@@ -223,14 +244,25 @@ class ConntactROSInterface(ConntactInterface):
         :param message: (str) to display
         :param delay: (float) This particular message will not display again for this long.
         """
-        rospy.logerr_throttle(delay, message)
+        rclpy.logging._root_logger.log(message,
+            LoggingSeverity.ERROR,
+            throttle_duration_sec=delay,
+            throttle_time_source_type=ROSClock(),
+        )
+
+        # rospy.logerr_throttle(delay, message)
 
     def send_info(self, message, delay=0.0):
         """Displays an error message for the user.
         :param message: (str) to display
         :param delay: (float) This particular message will not display again for this long.
         """
-        rospy.loginfo_throttle(delay, message)
+        rclpy.logging._root_logger.log(message,
+            LoggingSeverity.INFO,
+            throttle_duration_sec=delay,
+            throttle_time_source_type=ROSClock(),
+        )
+        # rospy.loginfo_throttle(delay, message)
 
     def publish_command_wrench(self, wrench: WrenchStamped):
         """Returns a force and torque command out of Conntact and into the calling environment so that the robot can act upon that command.

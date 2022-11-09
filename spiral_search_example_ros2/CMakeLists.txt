@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(conntact)
+project(spiral_search_example_ros2)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -17,9 +17,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(conntact REQUIRED)
 
 install(
-  DIRECTORY config resource src/conntact
+  DIRECTORY config launch meshes nodes urdf src/spiral_search_example_ros2
   DESTINATION share/${PROJECT_NAME}/
 )
 
@@ -27,13 +28,12 @@ install(
 ament_python_install_package(src/${PROJECT_NAME})
 
 # Install Python executables
-#install(
-#    PROGRAMS
-#        test.py
-#        nodes/ros2_spiral_search_node
-#       nodes/corner_search_node
-#        nodes/plotting_node
-#    DESTINATION lib/${PROJECT_NAME}/
-#)
+install(
+    PROGRAMS
+        nodes/spiral_search_node
+        nodes/corner_search_node
+        nodes/plotting_node
+    DESTINATION lib/${PROJECT_NAME}/
+)
 
 ament_package()

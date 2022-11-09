@@ -61,17 +61,15 @@ RUN_LOOP_TRIGGER           = 'run looped code'
 
 class testing():
     def __init__(self):
-        self._wrench_pub = rospy.Publisher('/cartesian_compliance_controller/target_wrench', WrenchStamped, queue_size=10)
-
+        self._wrench_pub = self.create_publisher(WrenchStamped, '/cartesian_compliance_controller/target_wrench',
+                                           10)
 class CornerSearch(ConnTask, Machine):
 
     def __init__(self):
-        
-        
 
         # Override Assembly Tools config variables
         ROS_rate = 100 #setup for sleeping in hz
-        start_time = rospy.get_rostime() 
+        start_time = rospy.get_rostime() #this gets current time as a time object
         
         ConnTask.__init__(self, ROS_rate, start_time)
 

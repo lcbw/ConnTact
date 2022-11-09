@@ -11,13 +11,13 @@ from colorama import Back, Fore, Style, init
 # from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 # from std_msgs.msg import String
 
-from spiral_search_example.corner_search import CornerSearch
+from spiral_search_example_ros2.spiral_search import SpiralSearch
 from conntact.ros_conntact_interface import ConntactROSInterface
 from conntact.conntext import Conntext
 
-package_name = "spiral_search_example"
+package_name = "spiral_search_example_ros2"
 conntasks = {
-    "SpiralSearch": CornerSearch
+    "SpiralSearch": SpiralSearch
 }
 
 def read_board_positions(target_hole: str, params: dict):

@@ -5,7 +5,7 @@
 
 import rospy
 
-from spiral_search_example.assembly_plotting import PlotAssemblyData
+from spiral_search_example_ros2.assembly_plotting import PlotAssemblyData
 
 if __name__ == '__main__':
     rospy.init_node("Assembly_Plotter")

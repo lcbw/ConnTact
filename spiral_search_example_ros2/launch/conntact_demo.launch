@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="algorithm_selected" default="spiral_search" description="Select the algorithm to be used: spiral_search or corner_search"/>
+  <let name="robot_description" value="$(command 'xacro $(find-pkg-share conntact)/urdf/workcell.urdf.xacro')"/>
+  <!--   That's UR-specific! -->
+    <group>
+      <include file="$(find ur_robot_driver)/launch/ur10e_bringup.launch" >
+        <arg name="robot_ip" default="172.31.1.137" description="SwRI Collaborative Lab's UR10e IP Address" />
+        <arg name="kinematics_config" let="$(find spiral_search_example)/config/my_robot_calibration.yaml" description="Yaml with calib values from your physical robot."/>
+        <arg name="headless_mode" default="true" description="At SwRI Collaborative Lab, we do not use URCap, so headless_mode is required" />
+        <arg name="stopped_controllers" let="cartesian_compliance_controller" description="Controllers that are initally loaded, but not started."/>
+
+    <!--     <arg name="controllers" default="joint_state_controller force_torque_sensor_controller cartesian_compliance_controller" description="Controllers that are activated by default."/> -->
+        <arg name="controllers" default="joint_state_controller force_torque_sensor_controller pos_joint_traj_controller" description="Controllers that are activated by default."/>
+        <arg name="controller_config_file" default="$(find spiral_search_example)/config/ur10e_controllers.yaml" description="Config file for defining the ROS-Control controllers for assembly application" />
+      </include>
+    </group>
+    
+  <node pkg="rviz2" exec="rviz2" args="-d $(var rviz_config)">
+    <param name="robot_description" value="$(var robot_description)"/>
+  </node>
+
+  <node type="plotting_node" name="assembly_plotter" 
+    pkg="spiral_search_example" output="screen" required="false" />
+  <node type="$(arg algorithm_selected)_node" name="algorithm_node"
+    pkg="spiral_search_example" output="screen" required="true">
+      <remap from="/wrench" to="/cartesian_compliance_controller/ft_sensor_wrench"/>
+  </node>
+
+</launch>
+
+
+

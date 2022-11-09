@@ -2,7 +2,6 @@
 # Licensed under the Apache License, Version 2.0
 
 # from _typeshed import NoneType
-import rospy
 import numpy as np
 from std_msgs.msg import String
 from colorama import Fore, Back, Style
@@ -10,39 +9,51 @@ import matplotlib.pyplot as plt
 from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 import tf2_ros
 import tf2_geometry_msgs
+import rclpy
+import tf2
+from rclpy.clock import Clock, ROSClock
+from rclpy.logging import LoggingSeverity
+from rclpy.time import Time
 
 class PlotAssemblyData():
 
     def __init__(self):
         
         self.average_wrench = None
-        self.avg_wrench_sub = rospy.Subscriber("/conntext/avg_wrench", Wrench, self.callback_update_wrench, queue_size=2)
-
+        self.avg_wrench_sub = self.create_subscription(Wrench, "/conntext/avg_wrench", self.callback_update_wrench,
+                                           10)
         self.average_speed = None
-        self.avg_speed_sub = rospy.Subscriber("/conntext/avg_speed", Point, self.callback_update_speed, queue_size=2)
-
+        self.avg_speed_sub = self.create_subscription(Point, "/conntext/avg_speed", self.callback_update_speed,
+                                           10)
         self.pos = None
-        self.rel_position_sub = rospy.Subscriber("/conntext/rel_position", Point, self.callback_update_pos, queue_size=2)
-
+        self.rel_position_sub = self.create_subscription(Point, "/conntext/rel_position", self.callback_update_pos,
+                                           10)
         self.status = None
-        self.status_sub = rospy.Subscriber("/conntext/status", String, self.callback_update_status, queue_size=2)
+        self.status_sub = self.create_subscription(String, "/conntext/status", self.callback_update_status,
+                                           10)
         
-        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))
+        self.tf_buffer = tf2_ros.Buffer(Clock,cache_time=tf2.Duration(1200.0))
         
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
 
         # Config variables
-        self.rate = rospy.Rate(50)
-        self.recordInterval = rospy.Duration(.1)
-        self.plotInterval = rospy.Duration(.5)
-        self.lastPlotted = rospy.Time(0)
-        self.lastRecorded = rospy.Time(0)
+        rate_integer = self.params["framework"]["refresh_rate"]
+        self._rate = self.create_rate(rate_integer)
+        # self.rate = rospy.Rate(50)
+        self.recordInterval = rclpy.duration.Duration(seconds=0.1) #rclpy.time.Duration(seconds=0.1) #
+        self.plotInterval = rclpy.duration.Duration(seconds=0.5)
+        self.lastPlotted = rclpy.time.Duration(seconds=0.0) #rospy.Time(0)
+        self.lastRecorded = rclpy.time.Duration(seconds=0.0) #rospy.Time(0)
         self.recordLength = 100
         self.surface_height = None
-        
 
-        rospy.loginfo(Fore.GREEN+Back.MAGENTA+"Plotter node active."+Style.RESET_ALL)
+        # rclpy.logging._root_logger.log(message,
+        #     LoggingSeverity.INFO,
+        #     throttle_duration_sec=delay,
+        #     throttle_time_source_type=ROSClock(),
+        # )
+        # rospy.loginfo(Fore.GREEN+Back.MAGENTA+"Plotter node active."+Style.RESET_ALL)
     
 
     def callback_update_wrench(self, data: Wrench):
@@ -74,7 +85,7 @@ class PlotAssemblyData():
         self.forceHistory = self.point_to_array(self.average_wrench.force)
         # 3xN array, vertically stacked positions
         self.posHistory = self.pos*1000
-        self._start_time = rospy.get_rostime()
+        self._start_time = self.get_clock().now() #ROSClock().now() was rospy.get_rostime()
         self.plotTimes = [0.0]
         plt.ion()
         # plt.show()
@@ -96,14 +107,14 @@ class PlotAssemblyData():
     
     def update_plots(self):
         #Record data to the buffer
-        if(rospy.Time.now() > self.lastRecorded + self.recordInterval):
-            self.lastRecorded = rospy.Time.now()
+        if(self.get_clock().now() > self.lastRecorded + self.recordInterval):
+            self.lastRecorded = self.get_clock().now()  #rospy.Time.now()
 
             #log all interesting data
             self.speedHistory = np.vstack((self.speedHistory, np.array(self.average_speed)*1000))
             self.forceHistory = np.vstack((self.forceHistory, self.point_to_array(self.average_wrench.force)))
             self.posHistory = np.vstack((self.posHistory, self.pos*1000))
-            self.plotTimes.append((rospy.get_rostime() - self._start_time).to_sec())
+            self.plotTimes.append((ROSClock().now() - self._start_time).to_sec())
             
             #limit list lengths
             if(len(self.speedHistory)>self.recordLength):
@@ -116,7 +127,7 @@ class PlotAssemblyData():
 
         #Actually plot the data; this is computation-heavy so we minimize the hz
         if(rospy.Time.now() > self.lastPlotted + self.plotInterval):
-            self.lastPlotted = rospy.Time.now()
+            self.lastPlotted = self.get_clock().now()
 
             self.planView.clear()
             self.sideView.clear()
@@ -225,11 +236,12 @@ class PlotAssemblyData():
             # x = vital_data[:] == [2,2,2,2]
 
             self.rate.sleep()
-        
+
+        ## what is the below thing::
         rospy.loginfo(Fore.GREEN+Back.MAGENTA+"Plotter node starting."+Style.RESET_ALL)
 
         self.init_plot()
 
-        while (not rospy.is_shutdown()):
+        while (rclpy.ok()):
             self.update_plots()
             self.rate.sleep()
