@@ -81,6 +81,7 @@ class Conntext:
         self.update_current_pos()
         self.update_avg_speed()
         self.update_average_wrench()
+        self.interface.spin()
 
     def send_reference_TFs(self):
         self.interface.register_frames(self.reference_frames)

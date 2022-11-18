@@ -12,6 +12,7 @@ import tf2_ros, rospkg
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from std_msgs.msg import String
+from rclpy.node import Node
 from rclpy.clock import Clock, ROSClock
 from rclpy.logging import LoggingSeverity
 from rclpy.time import Time
@@ -26,41 +27,41 @@ import yaml
 from conntact.conntact_interface import ConntactInterface
 
 class ConntactROS2Interface(ConntactInterface):
-    def __init__(self, conntact_params="conntact_params", this_package_name=None):
+    def __init__(self, node: rclpy.Node, conntact_params="conntact_params", this_package_name=None):
         #read in conntact parameters
-
+        self.node = node
         self.params = {}
         if(this_package_name is None):
             this_package_name = "conntact"
         self.path = self.get_package_path(this_package_name)
         self.params.update(self.load_yaml_file(conntact_params))
 
-        self._wrench_pub = self.create_publisher(WrenchStamped, '/cartesian_compliance_controller/target_wrench',
+        self._wrench_pub = node.create_publisher(WrenchStamped, '/cartesian_compliance_controller/target_wrench',
                                            10)
-        self._pose_pub = self.create_publisher(PoseStamped,'cartesian_compliance_controller/target_frame',10)
-        self._adj_wrench_pub = self.create_publisher(WrenchStamped, 'adjusted_wrench_force', 10)
+        self._pose_pub = node.create_publisher(PoseStamped,'cartesian_compliance_controller/target_frame',10)
+        self._adj_wrench_pub = node.create_publisher(WrenchStamped, 'adjusted_wrench_force', 10)
 
         # for plotting node
-        self.avg_wrench_pub = self.create_publisher(Wrench, '/cartesian_compliance_controller/target_wrench',
+        self.avg_wrench_pub = node.create_publisher(Wrench, '/cartesian_compliance_controller/target_wrench',
                                            10)
-        self.avg_speed_pub = self.create_publisher(Point, "/conntext/avg_speed",
+        self.avg_speed_pub = node.create_publisher(Point, "/conntext/avg_speed",
                                            10)
-        self.rel_position_pub = self.create_publisher(Point, "/conntext/rel_position",
+        self.rel_position_pub = node.create_publisher(Point, "/conntext/rel_position",
                                            10)
-        self.status_pub = self.create_publisher(String, "/conntext/status",
+        self.status_pub = node.create_publisher(String, "/conntext/status",
                                            10)
 
         # self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/force_torque_sensor_broadcaster/wrench", self.callback_update_wrench, 10)
-        self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", self.callback_update_wrench, 10)
+        self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", self.callback_update_wrench, 10)
 
         self.tf_buffer = Buffer(Clock,cache_time=tf2.Duration(1200.0)) # rclpy.duration.Duration(seconds=1200.0)
         # self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))  # tf buffer length
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.tf_listener = tf2_ros.TransformListener(node.tf_buffer)
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
 
         rate_integer = self.params["framework"]["refresh_rate"]
-        self._rate = self.create_rate(rate_integer) # rospy.Rate(rate_integer)  # setup for sleeping in hz
-        self._start_time = self.get_clock().now() ##rospy.get_rostime() or ROSClock().now()
+        self._rate = node.create_rate(rate_integer) # rospy.Rate(rate_integer)  # setup for sleeping in hz
+        self._start_time = node.get_clock().now() ##rospy.get_rostime() or ROSClock().now()
         # self._start_time = rospy.get_rostime() #this gets the current time as a time object
         self.framesDict = {}
         self.current_wrench = WrenchStamped()
@@ -70,23 +71,23 @@ class ConntactROS2Interface(ConntactInterface):
         # skip = True
         if(not skip):
             try:
-                zeroForceService = self.create_client(Trigger, "/ur_hardware_interface/zero_ftsensor")
+                zeroForceService = node.create_client(Trigger, "/ur_hardware_interface/zero_ftsensor")
                 while not zeroForceService.wait_for_service(timeout_sec=5.0): #rospy.wait_for_service("/ur_hardware_interface/zero_ftsensor", 5)
-                    self.get_logger().info('zero ft sensor service not available, waiting again...')
-                self.send_info("connected to service zero_ftsensor")
+                    node.get_logger().info('zero ft sensor service not available, waiting again...')
+                node.send_info("connected to service zero_ftsensor")
                 self.zero_ft_sensor()
             # except(rospy.ROSException):
             except Exception:
-                self.send_info("failed to find service zero_ftsensor")
+                node.send_info("failed to find service zero_ftsensor")
 
             # Set up controller:
             try:
-                switch_ctrl_srv = self.create_client(SwitchController, "/controller_manager/switch_controller")
+                switch_ctrl_srv = node.create_client(SwitchController, "/controller_manager/switch_controller")
                 while not switch_ctrl_srv.wait_for_service(timeout_sec=5.0):
-                    self.get_logger().info('switchcontroller sensor service not available, waiting again...')
-                controller_lister_srv = self.create_client(ListControllers, "/controller_manager/list_controllers")
+                    node.get_logger().info('switchcontroller sensor service not available, waiting again...')
+                controller_lister_srv = node.create_client(ListControllers, "/controller_manager/list_controllers")
                 while not controller_lister_srv.wait_for_service(timeout_sec=5.0):
-                    self.get_logger().info('list controllers service not available, waiting again...')
+                    node.get_logger().info('list controllers service not available, waiting again...')
                 # rospy.wait_for_service("/controller_manager/switch_controller", 5)
                 # rospy.wait_for_service("/controller_manager/list_controllers", 5)
                 # switch_ctrl_srv = rospy.ServiceProxy("/controller_manager/switch_controller", SwitchController)
@@ -152,7 +153,7 @@ class ConntactROS2Interface(ConntactInterface):
         # return np.double(rospy.get_rostime().to_sec())
         if not float:
             return ROSClock().now() #rospy.get_rostime()  #rostime object
-        return self.get_clock().now() #rospy.get_time() #float object
+        return self.node.get_clock().now() #rospy.get_time() #float object
 
     def get_package_path(self, pkg):
         """ Returns the position of `end` frame relative to `start` frame.
@@ -180,7 +181,7 @@ class ConntactROS2Interface(ConntactInterface):
         """
         return self.tf_buffer.transform(input, target_frame, rclpy.duration.Duration(seconds=0.1))
 
-    def get_transform(self, frame, origin):
+    def get_transform(self, frame, origin, node):
         """ Returns the position of `end` frame relative to `start` frame.
         :param frame: (string) name of target frame
         :param origin: (string) name of origin frame
@@ -189,7 +190,7 @@ class ConntactROS2Interface(ConntactInterface):
         """
         # print(Fore.MAGENTA + "lookup tcps: {}, {}".format(frame, origin) + Style.RESET_ALL)
         try:
-            output = self.tf_buffer.lookup_transform(origin, frame, self.get_clock().now(), rclpy.duration.Duration(seconds=1.0)) # rclpy.duration.Duration(seconds=0.1) #ROSClock().now()
+            output = self.tf_buffer.lookup_transform(origin, frame, node.get_clock().now(), rclpy.duration.Duration(seconds=1.0)) # rclpy.duration.Duration(seconds=0.1) #ROSClock().now()
             # print("Lookup successful! It's {} !!".format(output))
             # print("Lookup successful between {} and {} on behalf of method stack {}.".format(
             #     frame, origin, inspect.stack()[1][3]))
@@ -198,7 +199,7 @@ class ConntactROS2Interface(ConntactInterface):
             print("Error with getting TF!")
             return None
 
-    def get_transform_change_over_time(self, frame, origin, delta_time):
+    def get_transform_change_over_time(self, frame, origin, delta_time, node):
         """ Returns the change in position of `end` frame relative to `start` frame over the last delta_time period. If the delta_time param matches this loop's frequency, the returned value will be equivalent to the instantaneous velocity.
         :param frame: (string) name of target frame
         :param origin: (string) name of origin frame
@@ -209,11 +210,11 @@ class ConntactROS2Interface(ConntactInterface):
         try:
             earlier_position = self.tf_buffer.lookup_transform(
                 origin, frame,
-                self.get_clock().now() - rclpy.time.Duration(delta_time),
+                node.get_clock().now() - rclpy.time.Duration(delta_time),
                 rclpy.duration.Duration(seconds=1.0)) # ROSClock().now()
             current_position = self.tf_buffer.lookup_transform(
                 origin, frame,
-                self.get_clock().now() ,
+                node.get_clock().now() ,
                 rclpy.duration.Duration(seconds=1.0)) # ROSClock().now()
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return (None, None)
@@ -308,3 +309,6 @@ class ConntactROS2Interface(ConntactInterface):
         print("Abstract Conntact method {} not yet implemented.".format(inspect.stack()[1][3]))
         raise NotImplementedError()
 
+    def spin(self):
+        """"""
+        self.node.spin_some()

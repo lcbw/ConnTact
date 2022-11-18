@@ -7,35 +7,10 @@
 # Imports for ros
 # from _typeshed import StrPath
 
-from builtins import staticmethod
-from operator import truediv
-from pickle import STRING
-
-from colorama.initialise import reset_all
-import rospy
-import sys
-import numpy as np
-import matplotlib.pyplot as plt
-from rospkg import RosPack
+import rclpy
 from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
-from rospy.core import configure_logging
-
-from colorama import Fore, Back, Style, init
-# from sensor_msgs.msg import JointState
-# from assembly_ros.srv import ExecuteStart, ExecuteRestart, ExecuteStop
-from controller_manager_msgs.srv import SwitchController, LoadController, ListControllers
-from tf2_geometry_msgs.tf2_geometry_msgs import do_transform_pose
-
-import tf2_ros
-import tf2_py 
-# import tf2
-import tf2_geometry_msgs
-
-
-from threading import Lock
-
+import time
 from conntact.assembly_algorithm_blocks import ConnTask
-
 from transitions import Machine
 
 IDLE_STATE           = 'state_idle'
@@ -60,18 +35,18 @@ RUN_LOOP_TRIGGER           = 'run looped code'
 
 
 class testing():
-    def __init__(self):
-        self._wrench_pub = self.create_publisher(WrenchStamped, '/cartesian_compliance_controller/target_wrench',
+    def __init__(self, node: rclpy.Node):
+        self._wrench_pub = node.create_publisher(WrenchStamped, '/cartesian_compliance_controller/target_wrench',
                                            10)
 class CornerSearch(ConnTask, Machine):
 
-    def __init__(self):
-
+    def __init__(self, node: rclpy.Node):
         # Override Assembly Tools config variables
         ROS_rate = 100 #setup for sleeping in hz
-        start_time = rospy.get_rostime() #this gets current time as a time object
+        start_time = node.get_clock().now()
+        # start_time = rospy.get_rostime() #this gets current time as a time object
         
-        ConnTask.__init__(self, ROS_rate, start_time)
+        ConnTask.__init__(self, ROS_rate, start_time, node)
 
         #Override Alg Blocks config variables:
         states = [
@@ -101,13 +76,20 @@ class CornerSearch(ConnTask, Machine):
 
         self.tcp_selected = 'corner'
 
-    def main(self):
+    def main(self,node):
+
+        def callback(self, msg):
+            if msg.data is None:
+                node.get_logger().info("waiting for topic")
+
         # TODO: Remove following Sleep, use a rospy.wait command of some kind
-        rospy.sleep(3)
-        rospy.wait_for_message("cartesian_compliance_controller/ft_sensor_wrench", WrenchStamped)
-        
+        time.sleep(3)
+
+        self._ft_sensor_sub_test = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", callback,10)
+        while self._ft_sensor_sub.msg.data is None:
+            time.sleep(1.0)
         self.algorithm_execute()
-        rospy.loginfo("Corner Search all done!")
+        node.get_logger().info("Corner Search all done!")
 
 if __name__ == '__main__':
     

@@ -2,11 +2,8 @@
 # Licensed under the Apache License, Version 2.0
 
 from conntact.conntask import ConnTask, ConnStep
-from conntact.conntact_interface import ConntactInterface
-from conntact.conntext import Conntext
 from colorama import Back, Fore, Style
 import numpy as np
-from transitions import Machine
 
 START_STATE    = 'state_start'
 APPROACH_STATE = 'state_finding_surface'
@@ -27,8 +24,6 @@ RESTART_TEST_TRIGGER = 'restart test'
 RUN_LOOP_TRIGGER = 'run looped code'
 
 class SpiralSearch(ConnTask):
-
-
     def __init__(self, conntext, interface, target_frame_name, connfig_name):
 
         #Declare the official states list here. These will be passed into the machine.

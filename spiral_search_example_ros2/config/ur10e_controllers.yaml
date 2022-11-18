@@ -1,10 +1,10 @@
-# Settings for ros_control control loop
-hardware_control_loop:
-   loop_hz: 500
-
 controller_manager:
   ros__parameters:
     update_rate: 500  # Hz
+
+#  # Settings for ros_control control loop
+#  hardware_control_loop:
+#     loop_hz: 500
 
 # Publish all joint states ----------------------------------
     joint_state_broadcaster:

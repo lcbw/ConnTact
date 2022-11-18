@@ -17,7 +17,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://spiral_search_example/meshes/robotiq_arg2f_base_link.stl" />
+          <mesh filename="package://spiral_search_example_ros2/meshes/robotiq_arg2f_base_link.stl" />
         </geometry>
         <material name="">
           <color rgba="0.1 0.1 0.1 1" />
@@ -26,7 +26,7 @@
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://spiral_search_example/meshes/robotiq_arg2f_base_link.stl" />
+          <mesh filename="package://spiral_search_example_ros2/meshes/robotiq_arg2f_base_link.stl" />
         </geometry>
       </collision>
       <visual>
@@ -63,7 +63,7 @@
 
 
     <joint name="${parent}_gripper_TCP_joint" type="fixed">
-        <parent link="tool0" />
+        <parent link="${parent}" />
         <child link="${parent}_to_gripper_tip_link" />
         <origin rpy="0.0 0.0 0" xyz="0.00 0.00 0.115" />
     </joint>

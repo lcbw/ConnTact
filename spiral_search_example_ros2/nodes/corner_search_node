@@ -3,7 +3,8 @@
 # Copyright 2021 Southwest Research Institute
 # Licensed under the Apache License, Version 2.0
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import numpy as np
 from colorama import Back, Fore, Style, init
 
@@ -11,9 +12,9 @@ from colorama import Back, Fore, Style, init
 # from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 # from std_msgs.msg import String
 
-from spiral_search_example_ros2.corner_search import CornerSearch
-from conntact.ros_conntact_interface import ConntactROSInterface
-from conntact.conntext import Conntext
+from spiral_search_example_ros2.src.spiral_search_example_ros2.corner_search import CornerSearch
+from conntact.src.conntact.ros2_conntact_interface import ConntactROS2Interface
+from conntact.src.conntact.conntext import Conntext
 
 package_name = "spiral_search_example_ros2"
 conntasks = {
@@ -42,11 +43,12 @@ def read_board_positions(target_hole: str, params: dict):
 
 
 if __name__ == '__main__':
-    rospy.init_node("demo_assembly_application_compliance")
-    # rospy.sleep(10)
+    # generate the node here I think
+    rclpy.init(args=None)
+    node = Node("spiral_search")
 
     # initialize the Conntact environment by starting up the interface and conntext
-    interface = ConntactROSInterface("conntact_params", package_name)
+    interface = ConntactROS2Interface(node, "conntact_params", package_name)
     conntext  = Conntext(interface)
 
     # Load the params for this example from the params file and process them in.
@@ -57,10 +59,11 @@ if __name__ == '__main__':
     # The below could be run in a loop to execute all tasks specified in the task_list. Not currently implemented.
 
     # Instantiate the task called for in the task_list:
-    task = conntasks[task_info['task']](conntext, interface, "target_hole_position", task_info['connfig'])
+    task = conntasks[task_info['task']](conntext, interface, "target_hole_position", task_info['connfig'], node)
 
     # ** here's where you would do pathing stuff to move the robot close to the task location.
     # Begin the Task:
     task.main()
     interface.send_info(Fore.MAGENTA + "Node has control again!" +Style.RESET_ALL)
+    rclpy.shutdown()
 

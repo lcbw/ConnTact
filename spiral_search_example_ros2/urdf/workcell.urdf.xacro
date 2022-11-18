@@ -4,55 +4,66 @@
   <xacro:property name="ur_prefix" value="" />
 
   <!-- Xacro for the table -->
-  <xacro:include filename="$(find spiral_search_example)/urdf/assembly_table.xacro"/>
-
-  <!-- Xacros from the Siemens Gear Assembly Challenge -->
-<!--  <xacro:include filename="$(find assembly_ros)/support/urdf/siemens_base_plate.xacro"/>
-  <xacro:include filename="$(find assembly_ros)/support/urdf/siemens_small_shaft.xacro"/>
-  <xacro:include filename="$(find assembly_ros)/support/urdf/siemens_big_shaft.xacro"/>-->
+  <xacro:include filename="$(find spiral_search_example_ros2)/urdf/assembly_table.xacro"/>
 
 <!-- Xacros from the NIST Task Board #1-->
-  <xacro:include filename="$(find spiral_search_example)/urdf/laser_cut_base_plate.xacro"/>
+  <xacro:include filename="$(find spiral_search_example_ros2)/urdf/laser_cut_base_plate.xacro"/>
 
-  <!-- OLD FROM AUTOASSEMBLY Xacro for UR10e -->
-<!--  <xacro:include filename="$(find ur_e_description)/urdf/ur10e.urdf.xacro"/>-->
-  <!-- Xacro for UR10e -->
-  <xacro:include filename="$(find ur_description)/urdf/ur10e.xacro"/>
+  <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
 
   <!-- Xacro for gripper -->
-  <xacro:include filename="$(find spiral_search_example)/urdf/robotiq_gripper.xacro"/>
+  <xacro:include filename="$(find spiral_search_example_ros2)/urdf/robotiq_gripper.xacro"/>
 
 <!--  TODo: My Addition-->
-  <xacro:robotiq_gripper parent="tool0"/>
+  <xacro:robotiq_gripper parent="ur_tool0"/>
 
   <!-- Static environment -->
-<!--  <link name="world"/>-->
+  <link name="world"/>
 
-<!--  <xacro:assembly_table parent="world"/>-->
-  <xacro:assembly_table parent="base_link"/>
-
-<!--  <xacro:laser_cut_base_plate parent="table">
-    <origin xyz="0.4 -0.7 0.0" rpy="-0.0091 -0.013 0.0197"/>
-  </xacro:laser_cut_base_plate>-->
-
-<!--  <xacro:siemens_big_shaft parent="table">
-    <origin xyz="0.2 -0.7 0.0" rpy="-0.0091 -0.013 0.0197"/>
-  </xacro:siemens_big_shaft>
-
-  <xacro:siemens_small_shaft parent="table">
-    <origin xyz="-0.1 -0.7 0.0" rpy="-0.0091 -0.013 0.0197"/>
-  </xacro:siemens_small_shaft>-->
-
-  <!-- ROBOTS -->
-  <!-- UR -->
-<!--  <xacro:ur10e_robot prefix="${ur_prefix}" joint_limited="false" />-->
-
-<!--  <joint name="table_to_ur" type="fixed">
-    <origin xyz="0.6545 0.0144 0.0797" rpy="0.0 0.0 3.1415"/>
-    <parent link="table"/>
-    <child link="${ur_prefix}base_link"/>
+  <joint name="world_to_ur_base_link" type="fixed">
+  		<origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  		<parent link="world"/>
+  		<child link="ur_base_link"/>
   </joint>
 
-  <xacro:robotiq_gripper parent="${ur_prefix}tool0"/>-->
+ <xacro:assembly_table parent="world"/>
+
+  <!-- ROBOTS -->
+ <!-- UR -->
+  <xacro:arg name="name" default="ur"/>
+  <!-- parameters -->
+  <xacro:arg name="prefix" default="ur_" />
+  <xacro:arg name="joint_limit_params" default="$(find ur_description)/config/ur10e/joint_limits.yaml"/>
+  <xacro:arg name="kinematics_params" default="$(find ur_description)/config/ur10e/default_kinematics.yaml"/>
+  <xacro:arg name="physical_params" default="$(find ur_description)/config/ur10e/physical_parameters.yaml"/>
+  <xacro:arg name="visual_params" default="$(find ur_description)/config/ur10e/visual_parameters.yaml"/>
+  <xacro:arg name="safety_limits" default="false"/>
+  <xacro:arg name="safety_pos_margin" default="0.15"/>
+  <xacro:arg name="safety_k_position" default="20"/>
+  <!-- ros2_control related parameters -->
+  <xacro:arg name="use_fake_hardware" default="false" />
+  <xacro:arg name="fake_sensor_commands" default="false" />
+
+  <!-- arm -->
+  <xacro:ur_robot
+    prefix="$(arg prefix)"
+    joint_limits_parameters_file="$(arg joint_limit_params)"
+    kinematics_parameters_file="$(arg kinematics_params)"
+    physical_parameters_file="$(arg physical_params)"
+    visual_parameters_file="$(arg visual_params)"
+    safety_limits="$(arg safety_limits)"
+    safety_pos_margin="$(arg safety_pos_margin)"
+    safety_k_position="$(arg safety_k_position)"
+    use_fake_hardware="$(arg use_fake_hardware)"
+    fake_sensor_commands="$(arg fake_sensor_commands)"/>
+
+
+  <!-- May not be necessary once origin block is added to ur_robot macro
+  <joint name="table_to_ur" type="fixed">
+    <origin xyz="2.9545 0.0144 0.0797" rpy="0.0 0.0 3.1415"/>
+    <parent link="assembly_table"/>
+    <child link="ur_base_link"/>
+  </joint>
+  -->
 
 </robot>

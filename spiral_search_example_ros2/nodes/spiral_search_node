@@ -3,17 +3,20 @@
 # Copyright 2021 Southwest Research Institute
 # Licensed under the Apache License, Version 2.0
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import numpy as np
 from colorama import Back, Fore, Style, init
+import sys
 
 # import tf2_ros
 # from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 # from std_msgs.msg import String
 
-from spiral_search_example_ros2.spiral_search import SpiralSearch
-from conntact.ros_conntact_interface import ConntactROSInterface
-from conntact.conntext import Conntext
+from spiral_search_example_ros2.src.spiral_search_example_ros2.spiral_search import SpiralSearch
+
+from conntact.src.conntact.ros2_conntact_interface import ConntactROS2Interface
+from conntact.src.conntact.conntext import Conntext
 
 package_name = "spiral_search_example_ros2"
 conntasks = {
@@ -42,11 +45,13 @@ def read_board_positions(target_hole: str, params: dict):
 
 
 if __name__ == '__main__':
-    rospy.init_node("demo_assembly_application_compliance")
+    rclpy.init(args=None)
+    # node = rclpy.create_node("demo_assembly_application_compliance")
+    node = Node("demo_assembly_application_compliance")
     # rospy.sleep(10)
 
     # initialize the Conntact environment by starting up the interface and conntext
-    interface = ConntactROSInterface("conntact_params", package_name)
+    interface = ConntactROS2Interface(node,"conntact_params", package_name)
     conntext  = Conntext(interface)
 
     # Load the params for this example from the params file and process them in.
@@ -62,5 +67,8 @@ if __name__ == '__main__':
     # ** here's where you would do pathing stuff to move the robot close to the task location.
     # Begin the Task:
     task.main()
+
     interface.send_info(Fore.MAGENTA + "Node has control again!" +Style.RESET_ALL)
+    rclpy.shutdown()
+
 
