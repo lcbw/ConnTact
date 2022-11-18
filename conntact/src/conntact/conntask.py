@@ -7,7 +7,7 @@ from builtins import staticmethod
 
 import numpy as np
 # import rospy
-import tf.transformations as trfm
+import tf.transformations as trfm # port this likely
 from colorama import Back, Fore, Style, init as colorama_init
 
 from geometry_msgs.msg import (Point, Pose, PoseStamped, Quaternion, Transform,
@@ -15,7 +15,7 @@ from geometry_msgs.msg import (Point, Pose, PoseStamped, Quaternion, Transform,
                                WrenchStamped)
 from transitions import Machine
 from conntact.conntext import Conntext
-import conntact.assembly_utils as utils
+import src.conntact.assembly_utils as utils
 
 # State and Trigger names
 # It is best to use tags like these for the string-only names of

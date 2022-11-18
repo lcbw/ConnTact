@@ -1,9 +1,9 @@
 # Copyright 2021 Southwest Research Institute
 # Licensed under the Apache License, Version 2.0
 
-from conntact.conntask import ConnTask, ConnStep
-from conntact.conntact_interface import ConntactInterface
-from conntact.conntext import Conntext
+from src.conntact.conntask import ConnTask, ConnStep
+from src.conntact.conntact_interface import ConntactInterface
+from src.conntact.conntext import Conntext
 from colorama import Back, Fore, Style
 import numpy as np
 from transitions import Machine

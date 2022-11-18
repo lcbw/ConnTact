@@ -11,10 +11,10 @@ from colorama import Back, Fore, Style, init
 # import tf2_ros
 # from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 # from std_msgs.msg import String
-
-from spiral_search_example_ros2.src.spiral_search_example_ros2.corner_search import CornerSearch
-from conntact.src.conntact.ros2_conntact_interface import ConntactROS2Interface
-from conntact.src.conntact.conntext import Conntext
+from src.spiral_search_example_ros2.corner_search import CornerSearch
+from src.conntact.conntext import Conntext
+from src.conntact.ros2_conntact_interface import ConntactROS2Interface
+# from conntact.src.conntact.conntext import Conntext
 
 package_name = "spiral_search_example_ros2"
 conntasks = {

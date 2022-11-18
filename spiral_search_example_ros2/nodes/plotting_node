@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0
 import sys
 import rclpy
-from spiral_search_example_ros2.src.spiral_search_example_ros2.assembly_plotting import PlotAssemblyData
+from src.spiral_search_example_ros2.assembly_plotting import PlotAssemblyData
 
 if __name__ == '__main__':
     rclpy.init(args=None)
