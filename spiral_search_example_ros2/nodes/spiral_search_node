@@ -7,7 +7,6 @@ import rclpy
 from rclpy.node import Node
 import numpy as np
 from colorama import Back, Fore, Style, init
-import sys
 
 # import tf2_ros
 # from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform

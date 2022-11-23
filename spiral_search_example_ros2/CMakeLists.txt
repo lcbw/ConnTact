@@ -17,6 +17,8 @@ find_package(std_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(conntact REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+# find_package(tf_transformations REQUIRED)
 
 install(
   DIRECTORY config launch meshes nodes urdf src/spiral_search_example_ros2

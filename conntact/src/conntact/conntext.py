@@ -4,23 +4,16 @@
 # Imports for ros
 import time
 
-from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, \
-    Transform
-import tf2_ros
-import tf2_geometry_msgs
-import inspect
-
-
+from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 import numpy as np
 from colorama import Fore, Back, Style
-import tf.transformations as trfm
-import inspect
-import yaml
+from transforms3d.euler import EulerFuncs as tf3dE
+from transforms3d import quaternions as tf3dQ
 
-from conntact.conntact_interface import ConntactInterface
+from src.conntact.conntact_interface import ConntactInterface
 
 from modern_robotics import Adjoint as homogeneous_to_adjoint, RpToTrans
-import conntact.assembly_utils as utils
+import src.conntact.assembly_utils as utils
 
 class ToolData():
     def __init__(self):
@@ -127,7 +120,7 @@ class Conntext:
         output_pose = PoseStamped()  # tf_task_board_to_hole
         # output_pose.header.stamp = self.interface.get_unified_time()
         output_pose.header.frame_id = base_frame
-        tempQ = list(trfm.quaternion_from_euler(ori[0] * np.pi / 180, ori[1] * np.pi / 180, ori[2] * np.pi / 180))
+        tempQ = list(tf3dE.euler2quat(ori[0] * np.pi / 180, ori[1] * np.pi / 180, ori[2] * np.pi / 180))
         output_pose.pose = Pose(Point(pos[0] / 1000, pos[1] / 1000, pos[2] / 1000),
                                 Quaternion(tempQ[0], tempQ[1], tempQ[2], tempQ[3]))
         return output_pose
@@ -249,7 +242,7 @@ class Conntext:
             b_link = goal_pose.header.frame_id
             goal_matrix = Conntext.to_homogeneous(goal_pose.pose.orientation,
                                                        goal_pose.pose.position)  # tf from base_link to tcp_goal = bTg
-            backing_mx = trfm.inverse_matrix(
+            backing_mx = np.linalg.inv(
                 self.toolData.matrix)  # tf from tcp_goal to wrist = gTw
             goal_matrix = np.dot(goal_matrix, backing_mx)  # bTg * gTw = bTw
             goal_pose = Conntext.matrix_to_pose(goal_matrix, b_link)
@@ -266,7 +259,7 @@ class Conntext:
         :return: (np.Array()) 4x4 Homogeneous transform matrix.
         """
         # TODO candidate for Utils
-        output = trfm.quaternion_matrix(np.array([quat.x, quat.y, quat.z, quat.w]))
+        output = tf3dQ.quat2mat(np.array([quat.x, quat.y, quat.z, quat.w]))
         output[0][3] = point.x
         output[1][3] = point.y
         output[2][3] = point.z
@@ -283,7 +276,7 @@ class Conntext:
         # output.header.stamp = self.interface.get_unified_time()
         output.header.frame_id = base_frame
 
-        quat = trfm.quaternion_from_matrix(input)
+        quat = tf3dQ.mat2quat(input)
         output.pose.orientation.x = quat[0]
         output.pose.orientation.y = quat[1]
         output.pose.orientation.z = quat[2]
@@ -341,7 +334,7 @@ class Conntext:
             print(Fore.RED + " Transform passed in is " + str(
                 transform) + " and matrix passed in is \n" + str(matrix) + Style.RESET_ALL, 2)
         if invert:
-            matrix = trfm.inverse_matrix(matrix)
+            matrix = np.linalg.inv(matrix)
         return Conntext.transform_wrench_by_matrix(matrix, Conntext.wrenchToArray(wrench))
 
     @staticmethod

@@ -16,18 +16,16 @@ from rclpy.node import Node
 from rclpy.clock import Clock, ROSClock
 from rclpy.logging import LoggingSeverity
 from rclpy.time import Time
-import tf2_geometry_msgs
-import tf2
 from std_srvs.srv import Trigger
 from controller_manager_msgs.srv import (ListControllers, LoadController,
                                          SwitchController)
+from ament_index_python.packages import get_package_share_directory
 import numpy as np
-from colorama import Fore, Back, Style
 import yaml
-from conntact.conntact_interface import ConntactInterface
+from src.conntact.conntact_interface import ConntactInterface
 
 class ConntactROS2Interface(ConntactInterface):
-    def __init__(self, node: rclpy.Node, conntact_params="conntact_params", this_package_name=None):
+    def __init__(self, node: rclpy.node.Node, conntact_params="conntact_params", this_package_name=None):
         #read in conntact parameters
         self.node = node
         self.params = {}
@@ -54,7 +52,7 @@ class ConntactROS2Interface(ConntactInterface):
         # self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/force_torque_sensor_broadcaster/wrench", self.callback_update_wrench, 10)
         self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", self.callback_update_wrench, 10)
 
-        self.tf_buffer = Buffer(Clock,cache_time=tf2.Duration(1200.0)) # rclpy.duration.Duration(seconds=1200.0)
+        self.tf_buffer = Buffer(Clock,cache_time=rclpy.time.Duration(seconds=1200.0)) # rclpy.duration.Duration(seconds=1200.0)
         # self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))  # tf buffer length
         self.tf_listener = tf2_ros.TransformListener(node.tf_buffer)
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()

@@ -4,20 +4,17 @@
 # from _typeshed import NoneType
 import numpy as np
 from std_msgs.msg import String
-from colorama import Fore, Back, Style
 import matplotlib.pyplot as plt
 from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 import tf2_ros
-import tf2_geometry_msgs
 import rclpy
-import tf2
 from rclpy.clock import Clock, ROSClock
 from rclpy.logging import LoggingSeverity
 from rclpy.time import Time
 
 class PlotAssemblyData():
 
-    def __init__(self, node: rclpy.Node):
+    def __init__(self, node: rclpy.node.Node):
         self.node = node
         self.average_wrench = None
         self.avg_wrench_sub = node.create_subscription(Wrench, "/conntext/avg_wrench", self.callback_update_wrench,
@@ -32,7 +29,7 @@ class PlotAssemblyData():
         self.status_sub = node.create_subscription(String, "/conntext/status", self.callback_update_status,
                                            10)
         
-        self.tf_buffer = tf2_ros.Buffer(Clock,cache_time=tf2.Duration(1200.0))
+        self.tf_buffer = tf2_ros.Buffer(Clock,cache_time=rclpy.time.Duration(seconds=1200.0)) #rclpy.duration.Duration(seconds=1200.0)
         
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 

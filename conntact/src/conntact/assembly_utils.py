@@ -5,7 +5,7 @@ import numpy as np
 from geometry_msgs.msg import (Point, Pose, PoseStamped, Quaternion, Transform,
                                TransformStamped, Vector3, Wrench,
                                WrenchStamped)
-import tf.transformations as tf
+from transforms3d.euler import EulerFuncs as tf3d
 
 
 def qToEu(a):
@@ -13,7 +13,7 @@ def qToEu(a):
     :param a: (np.ndarray) Quaternion of the form (x,y,z,w)
     :return: (np.ndarray) Euler angles in degrees (XYZ sequential)
     """
-    return np.degrees(tf.euler_from_quaternion([*a]))
+    return np.degrees(tf3d.quat2euler([*a]))
 
 
 def euToQ(a):
@@ -21,7 +21,7 @@ def euToQ(a):
     :param a: (np.ndarray) Euler angles in degrees (XYZ sequential)
     :return: (np.ndarray) Quaternion of the form (x,y,z,w)
     """
-    return tf.quaternion_from_euler(*np.radians(a))
+    return tf3d.euler2quat(*np.radians(a))
 
 
 def qGetMagnitude(a):

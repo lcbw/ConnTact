@@ -1,20 +1,13 @@
 # Copyright 2021 Southwest Research Institute
 # Licensed under the Apache License, Version 2.0
 
-import string
 import sys
-from builtins import staticmethod
-
 import numpy as np
-# import rospy
-import tf.transformations as trfm # port this likely
-from colorama import Back, Fore, Style, init as colorama_init
 
-from geometry_msgs.msg import (Point, Pose, PoseStamped, Quaternion, Transform,
-                               TransformStamped, Vector3, Wrench,
-                               WrenchStamped)
+from transforms3d.euler import EulerFuncs as tf3d
+from colorama import Back, Fore, Style
+
 from transitions import Machine
-from conntact.conntext import Conntext
 import src.conntact.assembly_utils as utils
 
 # State and Trigger names
@@ -220,7 +213,7 @@ class ConnStep:
         # set up the parameters for this step
         if not hasattr(self, "desiredOrientation"):
             # Make a default orientation of vertical
-            self.desiredOrientation = trfm.quaternion_from_euler(0, 0, 0)
+            self.desiredOrientation = tf3d.euler2quat(0, 0, 0)
         self.completion_confidence = 0.0
 
         # Set up exit condition sensitivity
