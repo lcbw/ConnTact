@@ -7,13 +7,13 @@ from std_msgs.msg import String
 import matplotlib.pyplot as plt
 from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped, Pose, Point, Quaternion, Vector3, Transform
 import tf2_ros
+from tf2_ros import TransformListener
 import rclpy
 from rclpy.clock import Clock, ROSClock
 from rclpy.logging import LoggingSeverity
 from rclpy.time import Time
 
 class PlotAssemblyData():
-
     def __init__(self, node: rclpy.node.Node):
         self.node = node
         self.average_wrench = None
@@ -29,14 +29,14 @@ class PlotAssemblyData():
         self.status_sub = node.create_subscription(String, "/conntext/status", self.callback_update_status,
                                            10)
         
-        self.tf_buffer = tf2_ros.Buffer(Clock,cache_time=rclpy.time.Duration(seconds=1200.0)) #rclpy.duration.Duration(seconds=1200.0)
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rclpy.time.Duration(seconds=1200.0)) #rclpy.duration.Duration(seconds=1200.0)
         
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.tf_listener = TransformListener(buffer=self.tf_buffer,node=self.node)
 
 
         # Config variables
-        rate_integer = self.params["framework"]["refresh_rate"]
-        self._rate = self.create_rate(rate_integer) ##unsure about this
+        # rate_integer = node.params["framework"]["refresh_rate"]
+        self._rate = node.create_rate(50) ##unsure about this
         # self.rate = rospy.Rate(50)
         self.recordInterval = rclpy.duration.Duration(seconds=0.1) #rclpy.time.Duration(seconds=0.1) #
         self.plotInterval = rclpy.duration.Duration(seconds=0.5)

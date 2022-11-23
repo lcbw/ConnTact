@@ -3,15 +3,21 @@
 # Copyright 2021 Southwest Research Institute
 # Licensed under the Apache License, Version 2.0
 import sys
+import threading
 import rclpy
 from src.spiral_search_example_ros2.assembly_plotting import PlotAssemblyData
 
 if __name__ == '__main__':
     rclpy.init(args=None)
     node = rclpy.node.Node("plotting_node")
-
+    thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    thread.start()
     plotter = PlotAssemblyData(node)
-
-    plotter.main()
+    try:
+        while rclpy.ok():
+            plotter.main()
+    except KeyboardInterrupt:
+        pass
     rclpy.shutdown()
+    thread.join()
 

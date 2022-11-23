@@ -50,12 +50,12 @@ class ConntactROS2Interface(ConntactInterface):
                                            10)
 
         # self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/force_torque_sensor_broadcaster/wrench", self.callback_update_wrench, 10)
-        self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", self.callback_update_wrench, 10)
+        self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench", self.callback_update_wrench, 10)
 
-        self.tf_buffer = Buffer(Clock,cache_time=rclpy.time.Duration(seconds=1200.0)) # rclpy.duration.Duration(seconds=1200.0)
+        self.tf_buffer = Buffer(cache_time=rclpy.time.Duration(seconds=1200.0)) # rclpy.duration.Duration(seconds=1200.0)
         # self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))  # tf buffer length
-        self.tf_listener = tf2_ros.TransformListener(node.tf_buffer)
-        self.broadcaster = tf2_ros.StaticTransformBroadcaster()
+        self.tf_listener = tf2_ros.TransformListener(buffer=self.tf_buffer,node=self.node)
+        self.broadcaster = tf2_ros.StaticTransformBroadcaster(self.node)
 
         rate_integer = self.params["framework"]["refresh_rate"]
         self._rate = node.create_rate(rate_integer) # rospy.Rate(rate_integer)  # setup for sleeping in hz
@@ -153,12 +153,12 @@ class ConntactROS2Interface(ConntactInterface):
             return ROSClock().now() #rospy.get_rostime()  #rostime object
         return self.node.get_clock().now() #rospy.get_time() #float object
 
-    def get_package_path(self, pkg):
+    def get_package_path(self, pkg='conntact'):
         """ Returns the position of `end` frame relative to `start` frame.
         :return: (string) Path to the current package, under which /config/conntact_params can be found.
         :rtype: :class:`string`
         """
-        return get_package_share_directory('conntact') #rospkg.RosPack().get_path(pkg)
+        return get_package_share_directory(pkg) #rospkg.RosPack().get_path(pkg)
 
     def callback_update_wrench(self, data: WrenchStamped):
         """Callback to update current wrench data whenever new data becomes available.

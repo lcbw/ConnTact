@@ -15,6 +15,8 @@ from src.spiral_search_example_ros2.corner_search import CornerSearch
 from src.conntact.conntext import Conntext
 from src.conntact.ros2_conntact_interface import ConntactROS2Interface
 # from conntact.src.conntact.conntext import Conntext
+import threading
+
 
 package_name = "spiral_search_example_ros2"
 conntasks = {
@@ -46,6 +48,8 @@ if __name__ == '__main__':
     # generate the node here I think
     rclpy.init(args=None)
     node = Node("spiral_search")
+    thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    thread.start()
 
     # initialize the Conntact environment by starting up the interface and conntext
     interface = ConntactROS2Interface(node, "conntact_params", package_name)
@@ -57,13 +61,17 @@ if __name__ == '__main__':
     interface.register_frames(read_board_positions(task_info['position'], params))
 
     # The below could be run in a loop to execute all tasks specified in the task_list. Not currently implemented.
+    try:
+        while rclpy.ok():
+            # Instantiate the task called for in the task_list:
+            task = conntasks[task_info['task']](conntext, interface, "target_hole_position", task_info['connfig'], node)
 
-    # Instantiate the task called for in the task_list:
-    task = conntasks[task_info['task']](conntext, interface, "target_hole_position", task_info['connfig'], node)
-
-    # ** here's where you would do pathing stuff to move the robot close to the task location.
-    # Begin the Task:
-    task.main()
+            # ** here's where you would do pathing stuff to move the robot close to the task location.
+            # Begin the Task:
+            task.main()
+    except KeyboardInterrupt:
+        pass
     interface.send_info(Fore.MAGENTA + "Node has control again!" +Style.RESET_ALL)
     rclpy.shutdown()
+    thread.join()
 
