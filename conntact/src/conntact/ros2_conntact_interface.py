@@ -68,15 +68,12 @@ class ConntactROS2Interface(ConntactInterface):
         skip = False
         # skip = True
         if(not skip):
-            try:
-                zeroForceService = node.create_client(Trigger, "/ur_hardware_interface/zero_ftsensor")
-                while not zeroForceService.wait_for_service(timeout_sec=5.0): #rospy.wait_for_service("/ur_hardware_interface/zero_ftsensor", 5)
-                    node.get_logger().info('zero ft sensor service not available, waiting again...')
-                node.send_info("connected to service zero_ftsensor")
-                self.zero_ft_sensor()
-            # except(rospy.ROSException):
-            except Exception:
-                node.send_info("failed to find service zero_ftsensor")
+            # try:
+            # this used to be where the zero ft sensor command went.
+            # Option (a): port the zero ft command
+            # Option (b):
+            # except Exception:
+            #     node.send_info("failed to find service zero_ftsensor")
 
             # Set up controller:
             try:
@@ -249,8 +246,6 @@ class ConntactROS2Interface(ConntactInterface):
             throttle_time_source_type=ROSClock(),
         )
 
-        # rospy.logerr_throttle(delay, message)
-
     def send_info(self, message, delay=0.0):
         """Displays an error message for the user.
         :param message: (str) to display
@@ -268,7 +263,6 @@ class ConntactROS2Interface(ConntactInterface):
         :param wrench: (WrenchStamped) commanded force and torque object.
         """
         self._wrench_pub.publish(wrench)
-        # print("Command wrench is {}".format(wrench))
 
     def publish_averaged_wrench(self, wrench: Wrench):
         self._adj_wrench_pub.publish(wrench)
@@ -290,16 +284,11 @@ class ConntactROS2Interface(ConntactInterface):
     def sleep_until_next_loop(self):
         self._rate.sleep()
 
-    def zero_ft_sensor(self):
-        if self.zeroForceService():
-            self.send_info("Successfully zeroed the force-torque sensor.")
-        else:
-            self.send_info("Warning: Unsuccessfully tried to zero the force-torque sensor.")
-
-    # def change_compliance_params(self, new_gains = None, new_stiffness= None):
-    #     rospy.wait_for_service("/cartesian_compliance_controller/pd_gains/trans_z/set_parameters", timeout=5)
-    #     self.updateParamZ = rospy.ServiceProxy("/cartesian_compliance_controller/pd_gains/trans_z/set_parameters",
-    #                                            Reconfigure)
+    # def zero_ft_sensor(self):
+    #     if self.zeroForceService():
+    #         self.send_info("Successfully zeroed the force-torque sensor.")
+    #     else:
+    #         self.send_info("Warning: Unsuccessfully tried to zero the force-torque sensor.")
 
     def print_not_found_error(self):
         """Whine about the abstract method not being overridden in the implementation.

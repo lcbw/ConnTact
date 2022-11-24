@@ -71,14 +71,6 @@ def generate_launch_description():
                           'controller_config_file':'$(find-pkg-share spiral_search_example_ros2)/config/ur10e_controllers.yaml'}.items(),
     )
 
-    # spiral search plotters
-    spiral_search_plotter = Node(
-        package='spiral_search_example_ros2',
-        executable='plotting_node',
-        name='assembly_plotter',
-        output="screen",
-    )
-
     # spiral search algorithm
     spiral_search_algorithms = Node(
         package='spiral_search_example_ros2',
@@ -111,10 +103,18 @@ def generate_launch_description():
         for controller in controller_names
     ]
 
+    # # spiral search plotters
+    # spiral_search_plotter = Node(
+    #     package='spiral_search_example_ros2',
+    #     executable='plotting_node',
+    #     name='assembly_plotter',
+    #     output="screen",
+    # )
+
     return LaunchDescription([
         algorithm_selected,
         launch_include,
-        spiral_search_plotter,
+        # spiral_search_plotter,
         spiral_search_algorithms,
         rsp,
         rviz,
