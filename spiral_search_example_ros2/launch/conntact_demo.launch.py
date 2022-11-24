@@ -32,6 +32,10 @@ def run_xacro(xacro_file):
 
 def generate_launch_description():
     # args that can be set from the command line or a default will be used
+    sim_robot = DeclareLaunchArgument(
+        "sim_robot", default_value=False, description = "Bool, enables ur_hardware")
+    robot_ip = DeclareLaunchArgument(
+        "robot_ip", default_value='172.31.1.137', description = "Format: XXX.XX.X.XXX: found in info on teach pendant")
     algorithm_selected = DeclareLaunchArgument(
         "algorithm_selected", default_value=TextSubstitution(text="spiral_search"), description = "Select the algorithm to be used: spiral_search or corner_search"
     )
@@ -57,13 +61,13 @@ def generate_launch_description():
     launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('ur_bringup'),'launch'),
                 '/ur_control.launch.py']), launch_arguments={'ur_type':'ur10e',
-                          'robot_ip':'172.31.1.137',
+                          'robot_ip':robot_ip,
                           'prefix':'ur_',
                           'runtime_config_package':'spiral_search_example_ros2',
                           'controllers_file':'ur10e_controllers.yaml',
                           'robot_controller':'joint_state_broadcaster',
                           'launch_rviz':'false',
-                          'use_fake_hardware':'false',
+                          'use_fake_hardware':sim_robot,
                           # {'kinematics_config','$(find-pkg-share spiral_search_example_ros2)/config/my_robot_calibration.yaml'},
                           # {'headless_mode','true'},
                           'stopped_controllers':'cartesian_compliance_controller',
