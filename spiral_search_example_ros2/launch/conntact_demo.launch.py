@@ -33,11 +33,11 @@ def run_xacro(xacro_file):
 def generate_launch_description():
     # args that can be set from the command line or a default will be used
     sim_robot = DeclareLaunchArgument(
-        "sim_robot", default_value=False, description = "Bool, enables ur_hardware")
+        "sim_robot", default_value='false', description="Bool, enables ur_hardware")
     robot_ip = DeclareLaunchArgument(
-        "robot_ip", default_value='172.31.1.137', description = "Format: XXX.XX.X.XXX: found in info on teach pendant")
+        "robot_ip", default_value='172.31.1.137', description="Format: XXX.XX.X.XXX: found in info on teach pendant")
     algorithm_selected = DeclareLaunchArgument(
-        "algorithm_selected", default_value=TextSubstitution(text="spiral_search"), description = "Select the algorithm to be used: spiral_search or corner_search"
+        "algorithm_selected", default_value=TextSubstitution(text="spiral_search"), description="Select the algorithm to be used: spiral_search or corner_search"
     )
     ros_controllers_file = get_package_file('spiral_search_example_ros2', 'config/ur10e_controllers.yaml')
     xacro_file = get_package_file('spiral_search_example_ros2', 'urdf/workcell.urdf.xacro')
@@ -73,6 +73,14 @@ def generate_launch_description():
                           'stopped_controllers':'cartesian_compliance_controller',
                           'controllers':'joint_state_controller',
                           'controller_config_file':'$(find-pkg-share spiral_search_example_ros2)/config/ur10e_controllers.yaml'}.items(),
+    )
+
+    # spiral search algorithm
+    zero_ft_sensor = Node(
+        package='spiral_search_example_ros2',
+        executable='zero_ft_sensor_node',
+        name='zero_ft_sensor',
+        output='screen',
     )
 
     # spiral search algorithm
@@ -118,6 +126,7 @@ def generate_launch_description():
     return LaunchDescription([
         algorithm_selected,
         launch_include,
+        zero_ft_sensor,
         # spiral_search_plotter,
         spiral_search_algorithms,
         rsp,

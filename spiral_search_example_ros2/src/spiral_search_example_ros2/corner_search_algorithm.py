@@ -86,8 +86,10 @@ class CornerSearch(ConnTask, Machine):
         time.sleep(3)
 
         self._ft_sensor_sub_test = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench/", callback,10)
-        while self._ft_sensor_sub.msg.data is None:
-            time.sleep(1.0)
+
+        while (type(None) in [type(self._ft_sensor_sub_test)]):
+            self.rate.sleep()
+
         self.algorithm_execute()
         node.get_logger().info("Corner Search all done!")
 

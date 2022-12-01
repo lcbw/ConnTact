@@ -28,6 +28,7 @@ class ConntactROS2Interface(ConntactInterface):
     def __init__(self, node: rclpy.node.Node, conntact_params="conntact_params", this_package_name=None):
         #read in conntact parameters
         self.node = node
+        self._rate = node.create_rate(50) ##unsure about this
         self.params = {}
         if(this_package_name is None):
             this_package_name = "conntact"
@@ -50,7 +51,8 @@ class ConntactROS2Interface(ConntactInterface):
                                            10)
 
         # self._ft_sensor_sub = self.create_subscription(WrenchStamped, "/force_torque_sensor_broadcaster/wrench", self.callback_update_wrench, 10)
-        self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench", self.callback_update_wrench, 10)
+        self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/zero_ft_sensor/ft_sensor_wrench", self.callback_update_wrench, 10)
+        # self._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench", self.callback_update_wrench, 10)
 
         self.tf_buffer = Buffer(cache_time=rclpy.time.Duration(seconds=1200.0)) # rclpy.duration.Duration(seconds=1200.0)
         # self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))  # tf buffer length
@@ -68,13 +70,9 @@ class ConntactROS2Interface(ConntactInterface):
         skip = False
         # skip = True
         if(not skip):
-            # try:
-            # this used to be where the zero ft sensor command went.
-            # Option (a): port the zero ft command
-            # Option (b):
-            # except Exception:
-            #     node.send_info("failed to find service zero_ftsensor")
-
+            while (type(None) in [type(self._ft_sensor_sub)]):
+                self._rate.sleep()
+                self.send_info("waiting to hear from zero_ft_sensor")
             # Set up controller:
             try:
                 switch_ctrl_srv = node.create_client(SwitchController, "/controller_manager/switch_controller")
@@ -283,12 +281,6 @@ class ConntactROS2Interface(ConntactInterface):
 
     def sleep_until_next_loop(self):
         self._rate.sleep()
-
-    # def zero_ft_sensor(self):
-    #     if self.zeroForceService():
-    #         self.send_info("Successfully zeroed the force-torque sensor.")
-    #     else:
-    #         self.send_info("Warning: Unsuccessfully tried to zero the force-torque sensor.")
 
     def print_not_found_error(self):
         """Whine about the abstract method not being overridden in the implementation.

@@ -31,6 +31,7 @@ ament_python_install_package(src/${PROJECT_NAME})
 # Install Python executables
 install(
     PROGRAMS
+        nodes/zero_ft_sensor_node
         nodes/spiral_search_node
         nodes/corner_search_node
         nodes/plotting_node

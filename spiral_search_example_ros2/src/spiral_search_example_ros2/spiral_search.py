@@ -27,8 +27,6 @@ RESTART_TEST_TRIGGER = 'restart test'
 RUN_LOOP_TRIGGER = 'run looped code'
 
 class SpiralSearch(ConnTask):
-
-
     def __init__(self, conntext, interface, target_frame_name, connfig_name):
 
         #Declare the official states list here. These will be passed into the machine.

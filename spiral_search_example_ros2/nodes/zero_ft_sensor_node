@@ -1,0 +1,47 @@
+#! /usr/bin/env python3
+
+# Copyright 2021 Southwest Research Institute
+# Licensed under the Apache License, Version 2.0
+
+import rclpy
+from rclpy.node import Node
+import threading
+
+import numpy as np
+from colorama import Back, Fore, Style, init
+
+# import tf2_ros
+# from std_msgs.msg import String
+from geometry_msgs.msg import WrenchStamped, Wrench, TransformStamped, PoseStamped
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+package_name = "spiral_search_example_ros2"
+
+
+def callback_publish_wrench(self, wrench: Wrench):
+    offset = [0,0,0,0,0,0] # some wrench value
+    force = wrench.force - offset[:3]
+    torque = wrench.torque - offset[3:]
+    node._ft_sensor_pub.publish(Wrench(force,torque))
+
+
+if __name__ == '__main__':
+    rclpy.init(args=None)
+    node = Node("zero_ft_sensor")
+    node._rate = node.create_rate(50)  ##unsure about this
+    node._ft_sensor_sub = node.create_subscription(WrenchStamped, "/cartesian_compliance_controller/ft_sensor_wrench", callback_publish_wrench, 10)
+    node._ft_sensor_pub = node.create_publisher(WrenchStamped, '/zero_ft_sensor_node/ft_sensor_wrench', 10)
+
+    thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    while (type(None) in [type(node._ft_sensor_pub)]):
+        node._rate.sleep()
+    try:
+        thread.start()
+    except KeyboardInterrupt:
+        pass
+    rclpy.shutdown()
+    thread.join()
+
+
+

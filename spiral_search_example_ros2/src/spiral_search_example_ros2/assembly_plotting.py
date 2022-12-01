@@ -218,25 +218,15 @@ class PlotAssemblyData():
 
 
     def main(self):
-
-        ## this used to have a wait for message but that doesn't exist anymore
-
         # vital_data = [self.average_speed, self.average_wrench, self.status, self.pos]
-        # #Wait till we have real values for everything
-        # self._ft_sensor_sub_test = self.node.create_subscription(WrenchStamped,
-        #                                                     "/cartesian_compliance_controller/target_wrench",
-        #                                                     None, 10)
-        # while self._ft_sensor_sub_test.msg.data is None:
-        #     self.rate.sleep()
-        # while (type(None) in [type(self.average_speed), type(self.average_wrench), type(self.status), type(self.pos)]):
-        #     # vital_data = [self.average_speed, self.average_wrench, self.status, self.pos]
-        #     # x = vital_data[:] == [2,2,2,2]
-        #
-        #     self.rate.sleep()
+        # Wait till we have real values for everything
+
+        while (type(None) in [type(self.average_speed), type(self.average_wrench), type(self.status), type(self.pos)]):
+            self._rate.sleep()
 
         self.node.get_logger().info("Plotter node starting")
         self.init_plot()
 
         while (rclpy.ok()):
             self.update_plots()
-            self.rate.sleep()
+            self._rate.sleep()
